@@ -13,7 +13,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="onSubmit">查询</el-button>
+          <el-button type="primary" @click="onSubmit" size="small">查询</el-button>
           <el-button @click="resetSearch" size="small">重置</el-button>
         </el-form-item>
       </el-form>
