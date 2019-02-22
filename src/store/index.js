@@ -1,4 +1,5 @@
 import cookie from 'js-cookie'
+import path from '../const/path'
 
 // 最好提前在你的 store 中初始化好所有所需属性
 // https://vuex.vuejs.org/zh-cn/mutations.html
@@ -10,7 +11,7 @@ export const state = () => ({
   meta: {},
 
   user: {},
-  menuList: [],
+  menuList: [...path],
   permission: {}
 })
 
