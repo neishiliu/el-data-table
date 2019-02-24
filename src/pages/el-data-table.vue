@@ -13,6 +13,8 @@ export default {
     return {
       tableConfig: {
         url: '/security/api/v1/example/users',
+        dataPath: 'data.datas',
+        totalPath: 'data.total',
         showCheck: true,
         tableConfig: {
           'cell-class-name': data => {
@@ -58,9 +60,33 @@ export default {
           {
             $type: 'input',
             $id: 'name',
-            label: '用户名',
+            label: '组件名称',
             $el: {
               placeholder: '请输入'
+            }
+          },
+          {
+            $type: 'select',
+            $id: 'type',
+            label: '分类',
+            $options: [
+              '前端组件',
+              '测试子组件',
+              '分布式工具',
+              '应用服务',
+              '数据存储'
+            ].map(f => ({label: f, value: f})),
+            $el: {
+              placeholder: '请选择'
+            }
+          },
+          {
+            $type: 'select',
+            $id: 'status',
+            label: '状态',
+            $options: ['上架', '下架'].map(f => ({label: f, value: f})),
+            $el: {
+              placeholder: '请选择'
             }
           }
         ],
@@ -68,14 +94,86 @@ export default {
           {
             $type: 'input',
             $id: 'name',
-            label: '用户名',
+            label: '组件名称',
             $el: {
               placeholder: '请输入'
             },
             rules: [
               {
                 required: true,
-                message: '请输入用户名',
+                message: '请输入组件名称',
+                trigger: 'blur'
+              }
+            ]
+          },
+          {
+            $type: 'select',
+            $id: 'type',
+            label: '分类',
+            $options: [
+              '前端组件',
+              '测试子组件',
+              '分布式工具',
+              '应用服务',
+              '数据存储'
+            ].map(f => ({label: f, value: f})),
+            $el: {
+              placeholder: '请选择'
+            },
+            rules: [
+              {
+                required: true,
+                message: '请选择分类',
+                trigger: 'blur'
+              }
+            ]
+          },
+          {
+            $type: 'input',
+            $id: 'version',
+            label: '版本',
+            $el: {
+              placeholder: '请输入'
+            },
+            rules: [
+              {
+                required: true,
+                message: '请输入版本号',
+                trigger: 'blur'
+              }
+            ]
+          },
+          {
+            $type: 'select',
+            $id: 'lang',
+            label: '开发语言',
+            $options: ['javascript', 'nodejs', 'java', 'PHP'].map(f => ({
+              label: f,
+              value: f
+            })),
+            $el: {
+              placeholder: '请选择'
+            },
+            rules: [
+              {
+                required: true,
+                message: '请选择开发语言',
+                trigger: 'blur'
+              }
+            ]
+          },
+          {
+            $type: 'select',
+            $id: 'status',
+            label: '状态',
+            $options: ['上架', '下架'].map(f => ({label: f, value: f})),
+            $el: {
+              placeholder: '请选择'
+            },
+            rules: [
+              {
+                required: true,
+                message: '请选择状态',
                 trigger: 'blur'
               }
             ]

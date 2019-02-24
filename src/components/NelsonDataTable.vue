@@ -26,8 +26,12 @@
 
     <!--主操作按钮-->
     <section>
-      <el-button type="primary" size="small" v-if="showAdd">新增</el-button>
-      <el-button size="small" type="danger" v-if="showCheck">删除</el-button>
+      <el-button type="primary" size="small" v-if="showAdd" @click="edit()"
+        >新增</el-button
+      >
+      <el-button size="small" type="danger" v-if="showCheck" @click="mainDelete"
+        >删除</el-button
+      >
     </section>
 
     <!--表格-->
@@ -89,16 +93,53 @@
       >
       </el-pagination>
     </section>
+
+    <!--表单-->
+    <el-dialog
+      :title="dialogTitle"
+      :visible.sync="dialogFormVisible"
+      @close="cancel"
+    >
+      <el-form-renderer
+        :content="form"
+        ref="dialogForm"
+        v-bind="formAttrs"
+        :disabled="isView"
+      >
+        <!--@slot 额外的弹窗表单内容, 当form不满足需求时可以使用 -->
+        <slot name="form"></slot>
+      </el-form-renderer>
+
+      <div slot="footer" v-show="!isView">
+        <el-button @click="cancel" size="small">取 消</el-button>
+        <el-button
+          type="primary"
+          @click="confirm"
+          :loading="confirmLoading"
+          size="small"
+          >确 定</el-button
+        >
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+import _get from 'lodash.get'
 export default {
   name: 'nelson-data-table',
   props: {
     // 數據源url
     url: {
       type: String
+    },
+    dataPath: {
+      type: String,
+      default: 'data.datas'
+    },
+    totalPath: {
+      type: String,
+      default: 'data.total'
     },
     // 是否显示新增按钮
     showAdd: {
@@ -141,7 +182,7 @@ export default {
     // 分頁器配置
     paginationConfig: {
       type: Object,
-      default: function() {
+      default() {
         return {
           'page-sizes': [10, 20, 50, 100],
           'page-size': 10
@@ -150,7 +191,26 @@ export default {
     },
     // 搜索框配置
     searchForm: {
-      type: Array
+      type: Array,
+      default() {
+        return []
+      }
+    },
+    /**
+     * 弹窗表单
+     */
+    form: {
+      type: Array,
+      default() {
+        return []
+      }
+    },
+    // 弹窗表单设置
+    formAttrs: {
+      type: Object,
+      default() {
+        return {}
+      }
     }
   },
   data: function() {
@@ -161,17 +221,17 @@ export default {
         this.paginationConfig['page-sizes'][0],
       total: 100,
       loading: false,
-      formInline: {
-        user: '',
-        region: ''
-      },
       tableData: [],
-      multipleSelection: []
+      multipleSelection: [],
+      dialogFormVisible: false,
+      dialogTitle: '新增',
+      confirmLoading: false,
+      isView: false,
+      editRow: {}
     }
   },
   created() {
     if (this.url) {
-      console.log(this.url)
       this.load()
     }
   },
@@ -182,8 +242,9 @@ export default {
         : {}
       let params = '?'
       for (let key in query) {
-        console.log(key)
-        params += `&${key}=${query[key].trim()}`
+        if (query[key]) {
+          params += `&${key}=${query[key].trim()}`
+        }
       }
       params += `&page=${this.currentPage}&count=${this.count}`
 
@@ -191,8 +252,8 @@ export default {
       this.$axios.$get(this.url + params).then(
         res => {
           this.loading = false
-          this.tableData = res.datas
-          this.total = res.total
+          this.tableData = _get(res, this.dataPath)
+          this.total = _get(res, this.totalPath)
         },
         err => {
           this.loading = false
@@ -221,15 +282,147 @@ export default {
     resetSearch() {
       this.$refs.searchForm.resetFields()
       this.currentPage = 1
+      this.load()
+    },
+    mainDelete() {
+      if (this.multipleSelection.length <= 0) {
+        this.$message({
+          message: '请先选择需要删除的数据！',
+          type: 'warning'
+        })
+      } else {
+        this.$confirm('确认删除？')
+          .then(res => {
+            const idsArr = this.multipleSelection.map(item => {
+              return item.id
+            })
+            this.$axios.$delete(this.url + '/' + idsArr.toString()).then(
+              res => {
+                this.$message({
+                  message: `成功删除id为‘${idsArr.toString()}’的数据`,
+                  type: 'success'
+                })
+                this.load()
+              },
+              err => {
+                this.$message({
+                  message: `删除失败`,
+                  type: 'error'
+                })
+              }
+            )
+          })
+          .catch(_ => {})
+      }
     },
     onDefaultShow(row) {
-      console.log(row)
+      this.isView = true
+      this.dialogTitle = '查看'
+      this.dialogFormVisible = true
+      this.$nextTick(() => {
+        this.$refs.dialogForm.updateForm(row)
+      })
     },
     onDefaultEdit(row) {
-      console.log(row)
+      this.edit(row)
     },
     onDefaultDelete(row) {
-      console.log(row)
+      this.$confirm('确认删除？')
+        .then(res => {
+          this.$axios.$delete(this.url + '/' + row.id).then(
+            res => {
+              this.$message({
+                message: `成功删除id为‘${idsArr.toString()}’的数据`,
+                type: 'success'
+              })
+              this.load()
+            },
+            err => {
+              this.$message({
+                message: `删除失败`,
+                type: 'error'
+              })
+            }
+          )
+        })
+        .catch(_ => {})
+    },
+    edit(row = null) {
+      // row存在即为编辑，不存在则为新增
+      if (row) {
+        this.isView = false
+        this.dialogTitle = '编辑'
+        this.dialogFormVisible = true
+        this.editRow = row
+        this.$nextTick(() => {
+          this.$refs.dialogForm.updateForm(row)
+        })
+      } else {
+        this.isView = false
+        this.dialogTitle = '新增'
+        this.dialogFormVisible = true
+      }
+    },
+    cancel() {
+      this.editRow = {}
+      this.$refs.dialogForm.resetFields()
+      this.dialogFormVisible = false
+    },
+    confirm() {
+      this.$refs.dialogForm.validate(valid => {
+        if (!valid) {
+          this.$message({
+            message: '输入不合法，请检查表单',
+            type: 'warning'
+          })
+          return false
+        } else {
+          const val = this.$refs.dialogForm.getFormValue()
+          const id = this.editRow.id ? this.editRow.id : ''
+          // 有id则为编辑用put，没有则为新增用post
+          if (id) {
+            this.confirmLoading = true
+            this.$axios.$put(this.url + '/' + id, val).then(
+              res => {
+                this.$message({
+                  message: '提交成功',
+                  type: 'success'
+                })
+                this.confirmLoading = false
+                this.cancel()
+                this.load()
+              },
+              err => {
+                this.confirmLoading = false
+                this.$message({
+                  message: '提交失败',
+                  type: 'error'
+                })
+              }
+            )
+          } else {
+            this.confirmLoading = true
+            this.$axios.$post(this.url, val).then(
+              res => {
+                this.$message({
+                  message: '提交成功',
+                  type: 'success'
+                })
+                this.confirmLoading = false
+                this.cancel()
+                this.load()
+              },
+              err => {
+                this.confirmLoading = false
+                this.$message({
+                  message: '提交失败',
+                  type: 'error'
+                })
+              }
+            )
+          }
+        }
+      })
     }
   }
 }
